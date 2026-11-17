@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mos Eisley Exchange</title>
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<script src="/theme.js"></script>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/dashboard"><img src="/logo.svg" alt="" width="22" height="22"> Mos Eisley Exchange</a>
+  <button class="iconbtn menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="nav" aria-label="Menu">☰</button>
+  <nav class="nav" id="nav" aria-label="Main">
+    <a href="#/dashboard" data-page="dashboard">Dashboard</a>
+    <a href="#/bitcoin" data-page="bitcoin">Bitcoin</a>
+    <a href="#/shares" data-page="shares">Shares</a>
+    <a href="#/compare" data-page="compare">Compare</a>
+    <a href="#/alerts" data-page="alerts" id="navAlerts" hidden>Alerts</a>
+    <a href="#/admin" data-page="admin" id="navAdmin" hidden>Admin</a>
+  </nav>
+  <div class="userbox">
+    <a class="iconbtn bell" href="#/alerts" id="bell" aria-label="Notifications" title="Notifications" hidden>🔔<span class="count" id="bellCount" hidden>0</span></a>
+    <button class="iconbtn" id="themeToggle" title="Theme" aria-label="Theme: auto">◐</button>
+    <a class="iconbtn" href="#/account" id="userLink" title="Account"></a>
+    <button class="iconbtn" id="logout" title="Sign out">Sign out</button>
+  </div>
+</header>
+<main id="view" aria-live="off"><p class="skeleton">Loading…</p></main>
+<footer class="foot small muted">
+  <span id="status" role="status" aria-live="polite"></span>
+  <span>Prices from free public sources; they may be delayed. Not investment advice.</span>
+</footer>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
