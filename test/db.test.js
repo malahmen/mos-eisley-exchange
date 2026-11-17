@@ -11,11 +11,24 @@ import { createWatchlistRepo } from "../src/repos/watchlist.js";
 import { createHistory } from "../src/history.js";
 import { normalizePrefs } from "../src/repos/prefs.js";
 import { createSessions } from "../src/auth/sessions.js";
+import { createAlerts } from "../src/alerts/service.js";
 
+// SQLite by default. TEST_DB_ENGINE=mysql runs the same tests against a real
+// MySQL from the MYSQL_* variables, on an EMPTY database (the tests create
+// rows and do not clean up): SQLite accepts SQL that MySQL refuses - a column
+// named last_value broke the first deploy - so both engines need running.
+//   podman run -d --rm --name mex-mysql -p 3399:3306 -e MYSQL_ROOT_PASSWORD=t -e MYSQL_DATABASE=t mysql:8.4
+//   TEST_DB_ENGINE=mysql MYSQL_HOST=127.0.0.1 MYSQL_PORT=3399 MYSQL_USER=root MYSQL_PASSWORD=t MYSQL_DATABASE=t npm test
 let dir, db;
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), "mex-test-"));
-  db = await createDb({ engine: "sqlite", sqlitePath: join(dir, "t.sqlite") }, { log: () => {} });
+  const engine = process.env.TEST_DB_ENGINE || "sqlite";
+  const e = process.env;
+  db = await createDb({
+    engine,
+    sqlitePath: join(dir, "t.sqlite"),
+    mysql: { host: e.MYSQL_HOST, port: Number(e.MYSQL_PORT || 3306), user: e.MYSQL_USER, password: e.MYSQL_PASSWORD, database: e.MYSQL_DATABASE },
+  }, { log: () => {} });
 });
 after(async () => {
   await db.close();
@@ -107,4 +120,29 @@ test("prefs normalise", () => {
   assert.equal(p.displayCurrency, null);
   assert.equal(p.extraColumn, "");
   assert.equal(p.defaultPage, "dashboard");
+});
+
+test("alerts: a check run stores state and last value, and fires once", async () => {
+  // Backticks: `condition` is reserved in MySQL; SQLite accepts them too.
+  await db.run("INSERT INTO alerts (owner_id, `condition`, symbol, currency, threshold, channels, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [null, "price_above", "BTC", "USD", 100, JSON.stringify(["inapp"]), new Date().toISOString()]);
+  let price = 150;
+  const alerts = createAlerts({
+    db,
+    market: { bitcoin: async () => ({ sources: [{ quotes: [{ currency: "USD", price }] }] }) },
+    watchlist: { list: async () => [] },
+    users: { byId: async () => null },
+    notifier: { send: async () => ({}) },
+    jobs: { status: () => [] },
+    health: { failingFor: () => 0 },
+    settings: { get: async () => ({}) },
+    log: () => {},
+  });
+  assert.deepEqual(await alerts.run(), { checked: 1, fired: 1 });
+  const row = await db.get("SELECT state, `last_value` AS v, last_fired_at FROM alerts WHERE symbol = 'BTC'");
+  assert.equal(row.v, 150);
+  assert.ok(row.last_fired_at);
+  price = 160;
+  assert.deepEqual(await alerts.run(), { checked: 1, fired: 0 }, "still above: no second fire");
+  assert.equal((await db.get("SELECT `last_value` AS v FROM alerts WHERE symbol = 'BTC'")).v, 160);
 });

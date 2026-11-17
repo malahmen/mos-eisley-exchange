@@ -188,7 +188,8 @@ export function createAlerts({ db, market, watchlist, users, notifier, jobs, hea
       }
       const s = step(a, result, now);
       const iso = new Date(now).toISOString();
-      await db.run("UPDATE alerts SET state = ?, last_value = ?, last_checked_at = ?" + (s.fire ? ", last_fired_at = ?" : "") + " WHERE id = ?",
+      // last_value is reserved in MySQL 8 (a window function): quoted, which SQLite accepts too.
+      await db.run("UPDATE alerts SET state = ?, `last_value` = ?, last_checked_at = ?" + (s.fire ? ", last_fired_at = ?" : "") + " WHERE id = ?",
         s.fire ? [s.state, result.value ?? a.lastValue, iso, iso, a.id] : [s.state, result.value ?? a.lastValue, iso, a.id]);
       if (s.fire) {
         const r = await db.run("INSERT INTO alert_events (alert_id, owner_id, fired_at, value, message, deliveries) VALUES (?, ?, ?, ?, ?, ?)",
