@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "LAN dashboard for Bitcoin and share prices (US, Europe, China, Hong Kong) from free market-data APIs.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "start": "node server.js",

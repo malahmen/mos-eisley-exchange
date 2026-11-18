@@ -128,3 +128,7 @@ test/                     node --test suites
 ```
 
 Health probes: `/healthz` and `/readyz`. The roadmap and the decisions behind these features are in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Licence
+
+MIT - see [LICENSE](LICENSE).

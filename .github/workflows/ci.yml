@@ -1,0 +1,71 @@
+name: ci
+
+# Every push and pull request. Two jobs, because SQLite accepts SQL that
+# MySQL refuses: a column named last_value (reserved since MySQL 8.0) passed
+# every test here and crash-looped the first deploy on the homelab's MySQL
+# 8.4 (Kamino item 283).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # The whole suite on SQLite, on the oldest Node package.json allows and on
+    # the one the image runs (Dockerfile).
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.13", "24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: node --version
+      - run: npm ci
+      - run: npm test
+
+  mysql:
+    # The database tests again, against the MySQL the homelab runs. The tests
+    # create rows and never clean up, so the database must start empty: a
+    # fresh service container per run is.
+    runs-on: ubuntu-latest
+    # A failed migration used to leave the pool open and the run hanging.
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ptest"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Database tests on MySQL 8.4
+        env:
+          TEST_DB_ENGINE: mysql
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3306"
+          MYSQL_USER: root
+          MYSQL_PASSWORD: test
+          MYSQL_DATABASE: test
+        run: node --test test/db.test.js
