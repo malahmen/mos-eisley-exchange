@@ -33,6 +33,13 @@ jobs:
           - { node: "24", label: "24" }
     steps:
       - uses: actions/checkout@v4
+      - name: Job names are DNS labels (Kamino item 286)
+        # The Gitea runner gives each job's container its name as a DNS alias;
+        # one that is not a DNS label crashes podman's DNS on meksha.
+        if: matrix.label == '24'
+        run: |
+          python3 -c "import yaml" 2>/dev/null || python3 -m pip install --quiet pyyaml
+          python3 .github/check-job-names.py
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
