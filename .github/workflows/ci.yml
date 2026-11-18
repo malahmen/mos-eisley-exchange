@@ -40,14 +40,16 @@ jobs:
     runs-on: ubuntu-latest
     # A failed migration used to leave the pool open and the run hanging.
     timeout-minutes: 10
+    # The job runs in a container, so MySQL is reached by its service name on
+    # the job's own network and nothing is published on the host. Publishing
+    # 3306 failed on the Gitea runner: on meksha MariaDB holds that port.
+    container: node:24-bookworm
     services:
       mysql:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: test
           MYSQL_DATABASE: test
-        ports:
-          - 3306:3306
         options: >-
           --health-cmd "mysqladmin ping -h 127.0.0.1 -ptest"
           --health-interval 5s
@@ -55,15 +57,12 @@ jobs:
           --health-retries 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
+      - run: node --version
       - run: npm ci
       - name: Database tests on MySQL 8.4
         env:
           TEST_DB_ENGINE: mysql
-          MYSQL_HOST: 127.0.0.1
+          MYSQL_HOST: mysql
           MYSQL_PORT: "3306"
           MYSQL_USER: root
           MYSQL_PASSWORD: test
