@@ -19,10 +19,18 @@ jobs:
     # the one the image runs (Dockerfile).
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # An explicit name that is a valid DNS name. The Gitea runner gives the
+    # job's container its name as a DNS alias, and the default one,
+    # "test (22.13)", crashes podman's DNS server on meksha (aardvark-dns
+    # 1.4.0): the job's own lookups fail, and so do those of every other
+    # podman container there until it restarts.
+    name: test-node-${{ matrix.label }}
     strategy:
       fail-fast: false
       matrix:
-        node: ["22.13", "24"]
+        include:
+          - { node: "22.13", label: "22-13" }
+          - { node: "24", label: "24" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
