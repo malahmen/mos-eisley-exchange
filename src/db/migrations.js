@@ -132,7 +132,7 @@ export const MIGRATIONS = [
         id INT AUTO_INCREMENT PRIMARY KEY, owner_id INT NULL, \`condition\` VARCHAR(32) NOT NULL, symbol VARCHAR(32),
         currency VARCHAR(8), threshold DOUBLE, hysteresis_pct DOUBLE NOT NULL DEFAULT 0.5, cooldown_minutes INT NOT NULL DEFAULT 60,
         channels TEXT NOT NULL, extra_emails TEXT, note VARCHAR(200), enabled TINYINT NOT NULL DEFAULT 1,
-        state VARCHAR(16) NOT NULL DEFAULT 'armed', last_value DOUBLE, last_checked_at VARCHAR(32), last_fired_at VARCHAR(32),
+        state VARCHAR(16) NOT NULL DEFAULT 'armed', \`last_value\` DOUBLE, last_checked_at VARCHAR(32), last_fired_at VARCHAR(32),
         created_at VARCHAR(32) NOT NULL, created_by INT,
         FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE) ${MY}`,
       `CREATE TABLE alert_events (
